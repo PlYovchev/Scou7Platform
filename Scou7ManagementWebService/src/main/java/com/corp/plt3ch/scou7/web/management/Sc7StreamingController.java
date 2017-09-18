@@ -11,6 +11,7 @@ import com.corp.plt3ch.scou7.web.management.component.ISc7StreamsDataManagementS
 import com.corp.plt3ch.scou7.web.management.models.GeoLocation;
 import com.corp.plt3ch.scou7.web.management.models.StreamEndpoint;
 import com.corp.plt3ch.scou7.web.management.models.StreamInfo;
+import com.corp.plt3ch.scou7.web.management.models.StreamReport;
 
 @RestController
 @RequestMapping("/streaming")
@@ -40,7 +41,7 @@ public class Sc7StreamingController {
    }
    
    @RequestMapping(value = "/updateStreamInfo", method = RequestMethod.POST)
-   public boolean updateStreamInfo(@RequestBody StreamInfo streamInfo) {
+   public StreamReport updateStreamInfo(@RequestBody StreamInfo streamInfo) {
       return streamsManagementService.updateStreamInfo(streamInfo);
    }
 }

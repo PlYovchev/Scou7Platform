@@ -292,6 +292,8 @@ void gst_native_load_next_stream (JNIEnv* env, jobject thiz, jstring port) {
         LOG_VERBOSE("Clearing old vsink");
         gst_element_unlink(data->t, data->queueToSink);
         gst_element_set_state (data->vsink, GST_STATE_NULL);
+        gst_object_unref (data->vsink);
+        data->vsink = NULL;
 //        g_object_set(data->identity, "drop-probability", 1.0f, NULL);
 //        gst_pad_send_event(data->vsink, gst_event_new_eos());
 //        gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY(data->vsink), 0);
@@ -299,7 +301,6 @@ void gst_native_load_next_stream (JNIEnv* env, jobject thiz, jstring port) {
 //
     }
 
-    LOG_VERBOSE("test");
     if (data->videoReceivingPipeline) {
         LOG_VERBOSE("Cleared the old video receiving pipeline");
         gst_element_set_state (data->videoReceivingPipeline, GST_STATE_NULL);
@@ -309,7 +310,7 @@ void gst_native_load_next_stream (JNIEnv* env, jobject thiz, jstring port) {
     const gchar *nativeString = (*env)->GetStringUTFChars(env, port, 0);
 
     gchar *pipelineCmd = g_strdup_printf ("rtspsrc location=rtsp://192.168.1.104:8554/sc7rtsp?port=%s ! rtptheoradepay "
-                                                  "! theoradec ! glimagesink name=vsink2 sync=false", nativeString);
+                                                  "! theoradec ! glimagesink name=vsink sync=false", nativeString);
 
     LOG_VERBOSE(pipelineCmd);
 
@@ -326,7 +327,7 @@ void gst_native_load_next_stream (JNIEnv* env, jobject thiz, jstring port) {
 
     LOG_VERBOSE("Video receiving pipeline has been created");
 
-    data->vsink = gst_bin_get_by_name (GST_BIN (data->videoReceivingPipeline), "vsink2");
+    data->vsink = gst_bin_get_by_name (GST_BIN (data->videoReceivingPipeline), "vsink");
     if (!data->vsink)
         data->vsink = gst_object_ref (data->videoReceivingPipeline);
 
@@ -350,6 +351,46 @@ void gst_native_load_next_stream (JNIEnv* env, jobject thiz, jstring port) {
 
     LOG_VERBOSE("Video receiving pipeline - setting playing state");
     gst_element_set_state (data->videoReceivingPipeline, GST_STATE_PLAYING);
+}
+
+void gst_native_stop_next_stream (JNIEnv* env, jobject thiz) {
+    GstPad *tee_pad, *queue_pad;
+    CustomData *data = GET_CUSTOM_DATA (env, thiz, custom_data_field_id);
+
+    if (!data) return;
+
+    LOG_VERBOSE("Clearing old video receiving pipeline");
+    if (data->videoReceivingPipeline) {
+        LOG_VERBOSE("Cleared the old video receiving pipeline");
+        gst_element_set_state (data->videoReceivingPipeline, GST_STATE_NULL);
+        gst_object_unref (data->videoReceivingPipeline);
+        data->videoReceivingPipeline = NULL;
+    }
+
+    if (data->vsink) {
+        gst_object_unref (data->vsink);
+        data->vsink = NULL;
+    }
+
+    if (data->t && data->queueToSink) {
+        LOG_VERBOSE("Linking playing pipeline queue video sink.");
+        tee_pad = gst_element_get_request_pad (data->t, "src_%u");
+        queue_pad = gst_element_get_static_pad (data->queueToSink, "sink");
+        gst_pad_link (tee_pad, queue_pad);
+        gst_object_unref (tee_pad);
+        gst_object_unref (queue_pad);
+    }
+
+    LOG_VERBOSE("Video receiving pipeline has been created");
+    data->vsink = gst_bin_get_by_name (GST_BIN (data->pipeline), "vsink");
+    if (!data->vsink)
+        data->vsink = gst_object_ref (data->pipeline);
+
+    gst_element_set_state (data->vsink, GST_STATE_PLAYING);
+    if (data->native_window) {
+        LOG_VERBOSE ("Native window already received, notifying the vsink about it.");
+        gst_video_overlay_set_window_handle (GST_VIDEO_OVERLAY(data->vsink), (guintptr)data->native_window);
+    }
 }
 
 jboolean gst_class_init (JNIEnv* env, jclass klass) {
@@ -410,14 +451,15 @@ void gst_native_surface_finalize (JNIEnv *env, jobject thiz) {
 }
 
 static JNINativeMethod native_methods[] = {
-        { "nativeInit", "(Ljava/lang/String;)V", (void *) gst_native_init},
-        { "nativeFinalize", "()V", (void *) gst_native_finalize},
-        { "nativePlay", "()V", (void *) gst_native_play},
-        { "nativePause", "()V", (void *) gst_native_pause},
+        { "nativeInit", "(Ljava/lang/String;)V", (void *) gst_native_init },
+        { "nativeFinalize", "()V", (void *) gst_native_finalize },
+        { "nativePlay", "()V", (void *) gst_native_play },
+        { "nativePause", "()V", (void *) gst_native_pause },
         { "nativeLoadNextStream" , "(Ljava/lang/String;)V", (void *) gst_native_load_next_stream },
-        { "classInit", "()Z", (void *) gst_class_init},
-        { "nativeSurfaceInit", "(Ljava/lang/Object;)V", (void *) gst_native_surface_init},
-        { "nativeSurfaceFinalize", "()V", (void *) gst_native_surface_finalize}
+        { "nativeStopNextStream", "()V", (void *) gst_native_stop_next_stream },
+        { "classInit", "()Z", (void *) gst_class_init },
+        { "nativeSurfaceInit", "(Ljava/lang/Object;)V", (void *) gst_native_surface_init },
+        { "nativeSurfaceFinalize", "()V", (void *) gst_native_surface_finalize }
 };
 
 jint JNI_OnLoad(JavaVM *vm, void *reserved) {

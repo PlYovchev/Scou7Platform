@@ -19,6 +19,7 @@
         android:src="@drawable/play_button_icon"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true"
+        android:visibility="gone"
         android:background="@android:color/transparent">
     </ImageButton>
 
@@ -45,8 +46,9 @@
         android:clickable="true"
         android:visibility="gone"
         app:fabSize="normal"
-        app:srcCompat="@android:drawable/checkbox_off_background"
-        app:backgroundTint="?android:attr/textColorSecondaryInverseNoDisable" />
+        app:srcCompat="@drawable/red_square"
+        app:backgroundTint="?android:attr/textColorSecondaryInverseNoDisable"
+        app:elevation="14dp" />
 
     <ProgressBar
         android:id="@+id/loadingVideoBar"
@@ -56,5 +58,44 @@
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
         android:visibility="gone"
-        android:indeterminate="false" />
+        android:indeterminate="false"
+        android:indeterminateTint="#498980" />
+
+    <LinearLayout
+        android:id="@+id/liveVideoIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentLeft="true"
+        android:visibility="gone"
+        android:layout_margin="16dp"
+        android:gravity="center_vertical">
+
+        <ImageView
+            android:layout_width="25dp"
+            android:layout_height="25dp"
+            app:srcCompat="@drawable/red_circle" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="8dp"
+            android:text="@string/live"
+            android:textStyle="bold"
+            android:textSize="18sp"
+            android:textColor="#f6d1d1" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/streamingIndicator"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:visibility="gone"
+        android:layout_margin="16dp"
+        android:textColor="#006fff"
+        android:textSize="18sp"
+        android:text="@string/streaming" />
 </RelativeLayout>

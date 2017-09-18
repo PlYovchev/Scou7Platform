@@ -36,10 +36,10 @@ public class Scou7ManagementService extends Service {
 
         switch (streamingState) {
             case STOPPED:
-                _sc7ServiceState = new Sc7ManagementServiceStoppedState();
+                _sc7ServiceState = new Sc7ManagementServiceStoppedState(this);
                 break;
             case STREAMING:
-                _sc7ServiceState = new Sc7ManagementServicePlayingState();
+                _sc7ServiceState = new Sc7ManagementServicePlayingState(this);
                 break;
         }
 
